@@ -117,7 +117,8 @@ If the pages come out as plaintext, set the 'javascript-delay' to a higher numbe
 ## TODO
 
 1. Use iterative instead of recursive functions to prevent memory issues.
-1. Make the code more efficient instead of checking for the same links over and over again.
+1. ~~Make the code more efficient instead of checking for the same links over and over again.~~ 
+_Update 23/01/2020: Code has been changed/rearranged such that code operates more than 10 times faster (ballpark figure), taking minutes instead of an hour or two to go through an entire webpage. The regex filter has also been updated to include a negative lookup for #, to prevent subtantially duplicate webpages from being caught._
 1. Make the part_split a parameter to be passed in.
 1. Make the text file with links optional (though it would not be recommended to turn this off).
 1. Re-merge all split PDFs.
