@@ -4,7 +4,11 @@ With this module, you can get a link, and all the links within that link, as PDF
     See
     https://pythonspot.com/extract-links-from-webpage-beautifulsoup/
 
-To make this work, you will need to set your wkhtmltopdf.exe file config = pdfkit.configuration(wkhtmltopdf='C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe')
+To make this work, you will need to set your PATH_TO_WKHTMLTOPDF_EXE to the location of wkhtmltopdf.exe. You need to download wkhtmltopdf.exe for your OS. 
+
+    PATH_TO_WKHTMLTOPDF_EXE = 'C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe'
+    
+    config = pdfkit.configuration(wkhtmltopdf=PATH_TO_WKHTMLTOPDF_EXE)
 
     See: https://www.tutorialexample.com/fix-oserror-no-wkhtmltopdf-executable-found-in-win-10-for-pdfkit-beginner-python-pdfkit-tutorial/
 
@@ -14,7 +18,7 @@ To make this work, you will need to set your wkhtmltopdf.exe file config = pdfki
 
     See also https://pdfkit.org/docs/getting_started.html
 
-    Example provided in if __name__ = "__main__".
+    
 
 At the moment, this file also writes a LINKS_.txt file to keep all the links, and also to keep track of any split files. This is needed because the download_to_pdf function can be rather unreliable when used repeatedly. 
 
@@ -23,6 +27,8 @@ If the file size of a particular file is too small, it is likely there was an er
 See example.py for an example of how to implement this.
 
 See also example_workaround to see how to get a file directly.
+
+A smaller scale example is provided in if __name__ = "__main__" at the bottom of linkpdfs.py.
 
 NOTE: Sometimes the number of pages or filesize may vary slightly because the elements on a page (especially the graphic elements) don't all load. 
 """
@@ -40,7 +46,7 @@ PATH_TO_WKHTMLTOPDF_EXE = 'C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe'
 
 def gather_links(start_html_page, root_html_page, filter = "prefix", regex_link_filter=r"http(s)?://", attribute='href', html_tag='a'):
     """
-    Gather all the links fitting the required criteria in a list. Takes as arguments: Returns the list.
+    Gathers all the links fitting the required criteria in a list. Takes as arguments: Returns the list.
 
     start_html_page -> Where we will begin our search.
 
@@ -95,11 +101,13 @@ def gather_links_within_links(start_html_page, root_html_page, filter = "prefix"
     """
     Performs gather_links, but also appends to the list every link which meets the same requirements which can be found within each link. In other words, this recursively finds more and more links. Set a recursion limit with max_depth. 
     
-    The arguments, current_depth, links and link_set should not generally be touched. These are just to facilitate the recursion.
+    The arguments, current_depth, links and link_set should not generally be modified. These are just to facilitate the recursion.
+
+    However, it may be a good idea to reset these every time the function is called, especially if the function is being called multiple times in a row. Otherwise, you may face multiple repeated pages.
     """
 
     # TODO - Optimize this so it does not need to keep collecting the same links over and over again. As an example, trying to download the pages on Dynatrace's API page causes the current_depth to go down to around 400, but only 382 links are actually unique. in contrast, setting the max_depth to just 1 also collects 350 links but takes a much shorter time.
-    
+
     # TODO - Rewrite this as an iterative function so it does not face the issues of memory that come with recursion.
     
     # This is to initialise the list with start_html_page
@@ -154,8 +162,8 @@ def gather_links_within_links(start_html_page, root_html_page, filter = "prefix"
         # See benchmarking done at this link https://www.peterbe.com/plog/
     
 
-def download_as_pdf(link_or_list, file_name="outfile", folder_name=".", config = pdfkit.configuration(wkhtmltopdf=PATH_TO_WKHTMLTOPDF_EXE), options={'javascript-delay': 200}):
-    """Allows us to set the config within this function, create a folder if one does not already exist, and create a new file. Serves as a wrapper around pdfkit.from_url(). Returns False if a file already exists, causing an error.
+def download_as_pdf(link_or_list, file_name="outfile", folder_name=".", config =pdfkit.configuration(wkhtmltopdf=PATH_TO_WKHTMLTOPDF_EXE), options={'javascript-delay': 200}):
+    """Allows us to set the config within this function, create a folder if one does not already exist, and create a new file. Serves as a wrapper around pdfkit.from_url(). Returns False if a file already exists, causing an error, or if the operation is otherwise unsuccessful. Returns True if successful.
     
     'options' -> To pass options to pdfkit"""
     
@@ -269,7 +277,9 @@ def download_as_pdf(link_or_list, file_name="outfile", folder_name=".", config =
 
 def download_all_pdf(start_html_page, root_html_page, file_name="outfile", folder_name=".", filter = "prefix", regex_link_filter=r"http(s)?://", max_depth = 1, attribute='href', html_tag='a', config = pdfkit.configuration(wkhtmltopdf=PATH_TO_WKHTMLTOPDF_EXE), options={'javascript-delay': 200}, current_depth = 0, links=[], link_set=set()):
 
-    """Writes all links as well as links within those links up to a given recursion max_depth to a PDF file in a given folder name."""
+    """Writes all links as well as links within those links up to a given recursion max_depth to a PDF file in a given folder name.
+    
+    Returns a list of links if successful, or False if unsuccessful."""
     
     # Immediately stop  without checking the links if there will be a file error because the file already exists.
     if os.path.exists(f'{folder_name}/{file_name}.pdf'):
@@ -342,7 +352,7 @@ def download_all_pdf(start_html_page, root_html_page, file_name="outfile", folde
 
                 counter += 1
 
-    return True
+    return links
 
 if __name__ == "__main__":
 
