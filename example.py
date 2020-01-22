@@ -14,7 +14,7 @@ attribute='href'
 html_tag='a'
 
 config = pdfkit.configuration(wkhtmltopdf='C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe')
-options={'javascript-delay': 200}
+options={'javascript-delay': 1000}
 current_depth = 0
 
 
@@ -41,7 +41,7 @@ download_all_pdf(start_html_page, root_html_page, file_name, folder_name, filter
 # DYNATRACE INTEGRATIONS - DYNATRACE MODULES AND THIRD PARTY INTEGRATIONS
 start_html_page = 'https://www.dynatrace.com/support/help/setup-and-configuration/integrations/'
 file_name = "(3) Dynatrace Integrations"
-regex_link_filter=r"/support/help/setup-and-configuration/integrations/(?!.*feed\.xml)"
+regex_link_filter=r"/support/help/setup-and-configuration/integrations/(?!.*feed\.xml)(?!\#)"
 
 download_all_pdf(start_html_page, root_html_page, file_name, folder_name, filter, regex_link_filter, max_depth, attribute, html_tag, config, options, current_depth, links=[], link_set=set())
 

@@ -105,54 +105,51 @@ def gather_links_within_links(start_html_page, root_html_page, filter = "prefix"
 
     However, it may be a good idea to reset these every time the function is called, especially if the function is being called multiple times in a row. Otherwise, you may face multiple repeated pages.
     """
-
-    # TODO - Optimize this so it does not need to keep collecting the same links over and over again. As an example, trying to download the pages on Dynatrace's API page causes the current_depth to go down to around 400, but only 382 links are actually unique. in contrast, setting the max_depth to just 1 also collects 350 links but takes a much shorter time.
+    # Increase current_depth to prevent us from recursing too far.
+    current_depth += 1
 
     # TODO - Rewrite this as an iterative function so it does not face the issues of memory that come with recursion.
     
     # This is to initialise the list with start_html_page
     links.append(start_html_page)
 
-    # This allows us to speed things up by preventing non-unique additions. However, this is not enough as the search takes the form of a breadth-first-search. As such, there is a final check in every else statement. The main work should be done in the final return in the else statement.
-    link_set.add(start_html_page)
+    
+    link_set.update(start_html_page)
     
     # To notify how far more we have to go based on the max_depth and current_depth.
     print(f"Current depth is {current_depth}. Max Depth is {max_depth}.\nNumber of layers to go is {max_depth - current_depth}.")
     print(links[-1])
 
+    # We first gather the links on the page itself.
+    current_links = list(dict.fromkeys(gather_links(start_html_page, root_html_page, filter, regex_link_filter, attribute, html_tag)))
+
+
+    links.extend(current_links)
+    links = list(dict.fromkeys(links))
+    link_set.update(current_links)
+    
     # Recursion base case. We set a max_depth to prevent an infinite loop if every single page we go into has additional links.
     if current_depth >= max_depth:
-        # print("None", links)
-        return []
+        links.extend(current_links)
+        links = list(dict.fromkeys(links))
+        link_set.update(current_links)
+        
+        return links
 
     # This is to go into each link and get a list of every link in that link.
     else:
         
-        # We first gather the links on the page itself.
-        current_links = gather_links(start_html_page, root_html_page, filter, regex_link_filter, attribute, html_tag)
-
         # We add the links and all the links that can be found on the pages within those links, assuming they are not within the link_set, which is passed in the arguments in the recursive gather_links_within_links.
         for link in current_links:
             if link not in link_set:
-                
-                # These will be passed to the next recursion to try to keep from adding duplicates.
-                links.append(link)
-                link_set.add(link)
-                
-                # Increase current_depth to prevent us from recursing too far.
-                current_depth += 1
-                
+
                 # Recursive call, replacing start_html_page with link, and keeping all other parameters. 
                 new_links = gather_links_within_links(link, root_html_page, filter, regex_link_filter, attribute, html_tag, max_depth, current_depth, links, link_set)
                 
+                links.extend(new_links)
+                links = list(dict.fromkeys(links))
+                link_set.update(current_links)
                 
-                if new_links:
-                    for new_link in new_links:
-                        if new_link not in link_set:
-                            links.append(new_links)
-                            link_set.add(new_links)
-                
-        
         # This is the fastest method to sanitize a list of non-unique values and retain the order, and relies on the fact that regular dicts retain insertion order. 
 
         return list(dict.fromkeys(links))
@@ -162,7 +159,7 @@ def gather_links_within_links(start_html_page, root_html_page, filter = "prefix"
         # See benchmarking done at this link https://www.peterbe.com/plog/
     
 
-def download_as_pdf(link_or_list, file_name="outfile", folder_name=".", config =pdfkit.configuration(wkhtmltopdf=PATH_TO_WKHTMLTOPDF_EXE), options={'javascript-delay': 200}):
+def download_as_pdf(link_or_list, file_name="outfile", folder_name=".", config =pdfkit.configuration(wkhtmltopdf=PATH_TO_WKHTMLTOPDF_EXE), options={'javascript-delay': 1000}):
     """Allows us to set the config within this function, create a folder if one does not already exist, and create a new file. Serves as a wrapper around pdfkit.from_url(). Returns False if a file already exists, causing an error, or if the operation is otherwise unsuccessful. Returns True if successful.
     
     'options' -> To pass options to pdfkit"""
@@ -266,16 +263,16 @@ def download_as_pdf(link_or_list, file_name="outfile", folder_name=".", config =
                 pdfkit.from_url(link_or_list, f'{folder_name}/{file_name}.pdf', configuration=config, options=options)
             
         except FileNotFoundError:
-            print(f"FileNotFoundError for {folder_name}/{file_name}.pdf. Very likely to be 'FileNotFoundError: [WinError 206] The filename or extension is too long.' Comment out the try except block in download_as_pdf definition in the relevant module for more details.\n\nCarrying on...\n")
+            print(f"FileNotFoundError for {folder_name}/{file_name}.pdf. Very likely to be 'FileNotFoundError: [WinError 206] The filename or extension is too long.' Comment out the try except block in download_as_pdf definition in the relevant module for more details.\n\n")
         except:
-            print(f"Error for {folder_name}/{file_name}.pdf.\n\nCarrying on...\n")
+            print(f"Error for {folder_name}/{file_name}.pdf.\n\n")
             # raise
         
         return True
 
 
 
-def download_all_pdf(start_html_page, root_html_page, file_name="outfile", folder_name=".", filter = "prefix", regex_link_filter=r"http(s)?://", max_depth = 1, attribute='href', html_tag='a', config = pdfkit.configuration(wkhtmltopdf=PATH_TO_WKHTMLTOPDF_EXE), options={'javascript-delay': 200}, current_depth = 0, links=[], link_set=set()):
+def download_all_pdf(start_html_page, root_html_page, file_name="outfile", folder_name=".", filter = "prefix", regex_link_filter=r"http(s)?://", max_depth = 1, attribute='href', html_tag='a', config = pdfkit.configuration(wkhtmltopdf=PATH_TO_WKHTMLTOPDF_EXE), options={'javascript-delay': 1000}, current_depth = 0, links=[], link_set=set()):
 
     """Writes all links as well as links within those links up to a given recursion max_depth to a PDF file in a given folder name.
     
@@ -311,6 +308,12 @@ def download_all_pdf(start_html_page, root_html_page, file_name="outfile", folde
         download_as_pdf(links, file_name, folder_name, config=config, options=options)
     else:
         
+        # Create folder here if needed as we will be opening a file in this block. Note that this is only required because with open is used here as well (because of the repetition of the file splitting function from download_as_pdf here)
+        try:
+            os.mkdir(folder_name)
+            print(f"Directory, '{folder_name}', created.")
+        except FileExistsError:
+            print(f"ERROR: Directory, '{folder_name}', already exists. Attempting to create file...")
         # Number of times we will split the file.
         max_counter = math.ceil(number_of_links / part_split)
         
