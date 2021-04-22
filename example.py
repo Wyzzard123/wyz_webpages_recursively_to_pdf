@@ -47,3 +47,14 @@ download_all_pdf(start_html_page, root_html_page, file_name, folder_name, filter
 
 
 ####CONTINUE...###
+
+######Everything######
+folder_name = "Dynatrace Documentation"
+
+# All Dynatrace Documentation
+start_html_page = 'https://www.dynatrace.com/support/help/'
+file_name = "Dynatrace Documentation Consolidated"
+regex_link_filter = r"/support/help/(?!.*feed\.xml)"
+
+download_all_pdf(start_html_page, root_html_page, file_name, folder_name, filter, regex_link_filter, 3, attribute, html_tag, config, options, current_depth)
+
