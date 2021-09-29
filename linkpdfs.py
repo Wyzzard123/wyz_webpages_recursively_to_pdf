@@ -41,8 +41,10 @@ import urllib.request
 import re
 import pdfkit
 import math
+from decouple import config
 
-PATH_TO_WKHTMLTOPDF_EXE = 'C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe'
+PATH_TO_WKHTMLTOPDF_EXE = config("PATH_TO_WKHTMLTOPDF_EXE", 'C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe')
+
 
 def gather_links(start_html_page, root_html_page, filter = "prefix", regex_link_filter=r"http(s)?://", attribute='href', html_tag='a'):
     """
